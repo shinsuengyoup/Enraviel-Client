@@ -7,6 +7,8 @@ using UnityEngine.UI;
 
 public class BackendMgr : MonoBehaviour
 {
+    public static BackendMgr Instance { get; private set; }
+
     [SerializeField]
     private Canvas canvasUi;
     private GameObject goLoginGroup;
@@ -26,9 +28,25 @@ public class BackendMgr : MonoBehaviour
 
     private void Awake()
     {
-        goLoginGroup = canvasUi.transform.Find("GroupLogin").gameObject;
-        goStartGroup = canvasUi.transform.Find("GroupStart").gameObject;
-        goLoadingGroup = canvasUi.transform.Find("GroupLoading").gameObject;
+        // 싱글톤 인스턴스 설정
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("UiMgr의 인스턴스가 이미 존재합니다. 기존 인스턴스를 제거합니다.");
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
+        // 씬 전환 시에도 유지되도록 설정
+        DontDestroyOnLoad(gameObject);
+
+
+        Transform trfTop = canvasUi.transform.Find("SafeArea");
+
+        goLoginGroup = trfTop.transform.Find("GroupLogin").gameObject;
+        goStartGroup = trfTop.transform.Find("GroupStart").gameObject;
+        goLoadingGroup = trfTop.transform.Find("GroupLoading").gameObject;
 
         Transform trfLogin = goLoginGroup.transform;
         Transform trfLoading = goLoadingGroup.transform;
@@ -216,7 +234,7 @@ public class BackendMgr : MonoBehaviour
         string errorCode = bro.GetErrorCode();
         string errorMessage = bro.GetErrorMessage();
 
-        Debug.LogError($"에러 코드: {errorCode}, 메시지: {errorMessage}");
+        //Debug.LogError($"에러 코드: {errorCode}, 메시지: {errorMessage}");
 
         // 에러 코드별 처리
         switch (errorCode)
@@ -287,6 +305,7 @@ public class BackendMgr : MonoBehaviour
 
     private IEnumerator LoadPlayData()
     {
+        bool bloadComp = false;
         yield return null;
 
         yield return new WaitForSeconds(0.5f);
@@ -295,6 +314,9 @@ public class BackendMgr : MonoBehaviour
         imgFill.fillAmount = 1.0f;
 
         CancelInvoke("SetTextLoading");
+        bloadComp =  true;
+        yield return new WaitUntil(()=> bloadComp);
+        GameMgr.Instance.LoadScene("GameScene");
     }
 
     private void SetTextLoading()

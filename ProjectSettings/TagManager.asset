@@ -2,16 +2,17 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!78 &1
 TagManager:
-  serializedVersion: 2
-  tags: []
+  serializedVersion: 3
+  tags:
+  - UICamera
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Character
   - Water
   - UI
-  - 
+  - Background
   - 
   - 
   - 
@@ -41,3 +42,26 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: UiFront
+    uniqueID: 4115089583
+    locked: 0
+  - name: EffectFront
+    uniqueID: 783223985
+    locked: 0
+  - name: Ui
+    uniqueID: 3381811499
+    locked: 0
+  - name: 
+    uniqueID: 2879918317
+    locked: 0
+  - name: Background
+    uniqueID: 3198116831
+    locked: 0
+  - name: EffectBack
+    uniqueID: 3753412835
+    locked: 0
+  - name: Character
+    uniqueID: 3992432569
+    locked: 0
+  m_RenderingLayers:
+  - Default
