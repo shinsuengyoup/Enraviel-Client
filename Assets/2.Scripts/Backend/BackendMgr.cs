@@ -3,19 +3,43 @@ using System.Collections;
 using System.Collections.Generic;
 using BackEnd;
 using TMPro;
+using UnityEngine.UI;
 
 public class BackendMgr : MonoBehaviour
 {
     [SerializeField]
+    private Canvas canvasUi;
+    private GameObject goLoginGroup;
+    private GameObject goStartGroup;
+    private GameObject goLoadingGroup;
     private TMP_InputField txtfId, txtfPw;
+    private TextMeshProUGUI errorMessageText, txtLoading;
+    private Image imgFill;
 
-    [SerializeField]
-    private TextMeshProUGUI errorMessageText;
+
+    private int iLoadingCount;
+    private string[] txtLoadingMessage = new string[3] {"Loading.","Loading. .", "Loading. . ."};
 
     // ID 조건
     private const int MIN_ID_LENGTH = 6;
     private const int MAX_ID_LENGTH = 12;
 
+    private void Awake()
+    {
+        goLoginGroup = canvasUi.transform.Find("GroupLogin").gameObject;
+        goStartGroup = canvasUi.transform.Find("GroupStart").gameObject;
+        goLoadingGroup = canvasUi.transform.Find("GroupLoading").gameObject;
+
+        Transform trfLogin = goLoginGroup.transform;
+        Transform trfLoading = goLoadingGroup.transform;
+        txtfId = trfLogin.Find("InputField_ID").GetComponent<TMP_InputField>();
+        txtfPw = trfLogin.Find("InputField_PW").GetComponent<TMP_InputField>();
+        errorMessageText = trfLogin.Find("txtLog").GetComponent<TextMeshProUGUI>();
+        imgFill = trfLoading.Find("Bar").GetChild(0).GetComponent<Image>();
+        txtLoading = trfLoading.Find("Bar").GetChild(1).GetComponent<TextMeshProUGUI>();
+        txtLoading.text = null;
+
+    }
     void Start()
     {
         var bro = Backend.Initialize();
@@ -129,6 +153,13 @@ public class BackendMgr : MonoBehaviour
         StartCoroutine(SignUpCoroutine(id, password));
     }
 
+    public void OnbtnStart()
+    {
+        StartCoroutine(nameof(LoadSystemData));
+        goStartGroup.SetActive(false);
+        goLoadingGroup.SetActive(true);
+    }
+
     /// <summary>
     /// 로그인 코루틴
     /// </summary>
@@ -143,6 +174,8 @@ public class BackendMgr : MonoBehaviour
             txtfId.text = "";
             txtfPw.text = "";
             // TODO: 로그인 후 처리 (씬 이동 등)
+            goLoginGroup.SetActive(false);
+            goStartGroup.SetActive(true);
         }
         else
         {
@@ -234,5 +267,42 @@ public class BackendMgr : MonoBehaviour
         {
             ShowError("로그아웃에 실패했습니다.");
         }
+    }
+
+    private IEnumerator LoadSystemData()
+    {
+        InvokeRepeating("SetTextLoading", 0f, 0.3f);
+        bool bloadComp = false;
+        yield return null;
+
+        yield return new WaitForSeconds(0.5f);
+        imgFill.fillAmount = 0.25f;
+        yield return new WaitForSeconds(0.5f);
+        imgFill.fillAmount = 0.5f;
+        
+        bloadComp =  true;
+        yield return new WaitUntil(()=> bloadComp);
+        StartCoroutine(nameof(LoadPlayData));
+    }
+
+    private IEnumerator LoadPlayData()
+    {
+        yield return null;
+
+        yield return new WaitForSeconds(0.5f);
+        imgFill.fillAmount = 0.75f;
+        yield return new WaitForSeconds(0.5f);
+        imgFill.fillAmount = 1.0f;
+
+        CancelInvoke("SetTextLoading");
+    }
+
+    private void SetTextLoading()
+    {
+        iLoadingCount++;
+        if(iLoadingCount >= 3)
+            iLoadingCount = 0;
+
+        txtLoading.text = txtLoadingMessage[iLoadingCount];
     }
 }
