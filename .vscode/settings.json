@@ -67,5 +67,12 @@
     "*.sln": "*.csproj",
     "*.slnx": "*.csproj"
   },
+  "[csharp]": {
+    "editor.defaultFormatter": "ms-dotnettools.csharp",
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true
+  },
+  "editor.formatOnSave": true,
+
   "dotnet.defaultSolution": "Enraviel-Client.slnx"
 }

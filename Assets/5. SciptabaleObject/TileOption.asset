@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b71b1d8377c0a414bb23f3d47538833d, type: 3}
+  m_Name: TileOption
+  m_EditorClassIdentifier: Assembly-CSharp::TileOption
+  tileType: 2
+  isExplored: 0
+  spawnId: -1
+  col: {r: 0, g: 0, b: 0, a: 0}
