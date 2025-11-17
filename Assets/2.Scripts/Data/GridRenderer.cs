@@ -42,10 +42,22 @@ public class GridRenderer : MonoBehaviour
 
         LineRenderer lineRenderer = line.AddComponent<LineRenderer>();
         lineRenderer.material = lineMaterial;
-        lineRenderer.startWidth = 0.02f; // 선의 두께
-        lineRenderer.endWidth = 0.02f;
-        lineRenderer.startColor = Color.black;
-        lineRenderer.endColor = Color.black;
+        lineRenderer.startWidth = 0.015f; // 선의 두께
+        lineRenderer.endWidth = 0.015f;
+
+        lineRenderer.startColor = ConstData.CLR_Gray_tile;
+        lineRenderer.endColor = ConstData.CLR_Gray_tile;
+        GradientColorKey[] colorKeys = new GradientColorKey[2];
+        GradientAlphaKey[] alphaKeys = new GradientAlphaKey[2];
+        Gradient gradient = new Gradient();
+        colorKeys[0].color = Color.black;
+        colorKeys[1].color = Color.black;
+        alphaKeys[0].time = 0; alphaKeys[0].alpha = 0.5f;
+        colorKeys[1].time = 1; alphaKeys[1].alpha = 0.5f;
+        gradient.SetKeys(colorKeys, alphaKeys);
+        lineRenderer.colorGradient = gradient;
+
+
         lineRenderer.positionCount = 2;
         lineRenderer.SetPosition(0, start);
         lineRenderer.SetPosition(1, end);

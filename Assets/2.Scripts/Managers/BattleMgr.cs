@@ -10,10 +10,21 @@ public class BattleMgr : MonoBehaviour
 
     [SerializeField] private Grid grid;  // Tilemap이 속한 Grid
     private Tilemap tilemap;
+    [SerializeField] private CreatureBase[] players;
+
+
+    // 인게임 격자 무늬
     [SerializeField] private GridRenderer gridRenderer;
+    private GameObject goGridRenderer;
 
     // 타일 정보 저장 (좌표 -> TileOption)
     private Dictionary<Vector3Int, TileOption> tileDataMap = new();
+
+
+
+
+    private int iSpawnIdx;
+    private int iSpawnEnemyIdx;
 
     private void Awake()
     {
@@ -32,19 +43,19 @@ public class BattleMgr : MonoBehaviour
     void Start()
     {
         tilemap = grid.transform.Find("Tiles").GetComponent<Tilemap>();
+        goGridRenderer = gridRenderer.gameObject;
+        iSpawnIdx = 0;
+        iSpawnEnemyIdx = 0;
         InitializeTiles();
     }
 
     void InitializeTiles()
     {
         BoundsInt bounds = tilemap.cellBounds;
-        tilemap.color = Color.clear;
-
 
         foreach (Vector3Int cellPos in bounds.allPositionsWithin)
         {
             TileBase tile = tilemap.GetTile(cellPos);
-
 
             if (!tileDataMap.ContainsKey(cellPos))
                 tileDataMap.Add(cellPos, new TileOption());
@@ -52,7 +63,7 @@ public class BattleMgr : MonoBehaviour
             if (tile != null)
             {
                 // 타일 이름으로 타입 결정
-                SetTileOption(tile.name, tileDataMap[cellPos]);
+                SetTileOption(tile.name, tileDataMap[cellPos], cellPos);
             }
 
         }
@@ -82,6 +93,8 @@ public class BattleMgr : MonoBehaviour
         TileBase tileBase = tilemap.GetTile(cellPos);
         if (tileBase == null) return;
 
+        calcRangeTile(3, cellPos);
+
         Debug.Log(tileDataMap.TryGetValue(cellPos, out var tileOption2));
         // 저장된 데이터 조회
         if (tileDataMap.TryGetValue(cellPos, out var tileOption))
@@ -90,7 +103,69 @@ public class BattleMgr : MonoBehaviour
             Debug.Log($"이동가능: {tileOption.tileType != TileType.Wall}");
         }
     }
+
+    public void OnBtnActiveTileMap()
+    {
+        bool bActive = !goGridRenderer.activeSelf;
+        goGridRenderer.SetActive(bActive);
+    }
+    // 시야 범위를 받고 이동가능한 위치를 타일에 표시
+    public void OnRangeTile(List<int> idxlist)
+    {
+
+    }
+
+
     #endregion TileEvent
+
+    #region Tile calc
+    public static void SCalcRangeTile(int range, Vector3Int curPos)
+    {
+        if (range <= 0)
+            return;
+        if (curPos == null)
+            return;
+
+        Instance.calcRangeTile(range, curPos);
+    }
+
+    private void calcRangeTile(int range, Vector3Int curPos)
+    {
+        BoundsInt bounds = tilemap.cellBounds;
+        TileBase curTile = tilemap.GetTile(curPos);
+        if (curTile == null)
+        {
+            Debug.LogError("현재 타일은 존재하지 않는 타일입니다.");
+            return;
+        }
+
+        foreach (Vector3Int cellPos in bounds.allPositionsWithin)
+        {
+            if (Vector3Int.Distance(curPos, cellPos) <= range)
+            {
+                tilemap.SetColor(cellPos, ConstData.CLR_RED_tile);
+            }
+            else
+            {
+                tilemap.SetColor(cellPos, Color.clear);
+            }
+        }
+    }
+
+    public static Vector3 SConvertTilePos(Vector3Int cellpos)
+    {
+        return Instance.ConvertTilePos(cellpos);
+    }
+    private Vector3 ConvertTilePos(Vector3Int cellpos)
+    {
+        // 월드 포지션 계산
+        Vector3 worldPosition = tilemap.CellToWorld(cellpos);
+
+        return worldPosition;
+    }
+
+    #endregion
+
 
     #region TileOption
     // 타일 속성 변경
@@ -108,7 +183,7 @@ public class BattleMgr : MonoBehaviour
     /// <summary>
     /// 타일 이름에 따라 TileOption 설정
     /// </summary>
-    public void SetTileOption(string tileName, TileOption tileOption)
+    public void SetTileOption(string tileName, TileOption tileOption, Vector3Int cellPos)
     {
         switch (tileName)
         {
@@ -121,21 +196,24 @@ public class BattleMgr : MonoBehaviour
             case var t when t == FormatString.tileTick:  // "Tick"
                 tileOption.SetTileOption(TileType.Tick);
                 break;
+            case var t when t == FormatString.tileSpawn:
+                tileOption.SetTileOption(TileType.Spawn, iSpawnIdx);
+                if (players.Length > iSpawnIdx)
+                {
+                    players[iSpawnIdx].SetStartPos(cellPos, ConvertTilePos(cellPos));
+                }
+                iSpawnIdx++;
+                break;
+            case var t when t == FormatString.tileSpawnEnemy:
+                tileOption.SetTileOption(TileType.SpawnEnemy, iSpawnEnemyIdx);
+                iSpawnEnemyIdx++;
+                break;
             default:
                 tileOption.SetTileOption(TileType.None);
                 break;
         }
     }
     #endregion TileOption
-
-
-
-
-
-
-
-
-
 
     #region Editor
     // 에디터에서 그리드 라인 표시
