@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using UnityEngine.UI;
 using System.Collections.Generic;
 using Dataformat;
+using TMPro;
 
 public class BattleMgr : MonoBehaviour
 {
@@ -11,6 +13,10 @@ public class BattleMgr : MonoBehaviour
     [SerializeField] private Grid grid;  // Tilemap이 속한 Grid
     private Tilemap tilemap;
     [SerializeField] private CreatureBase[] players;
+    [SerializeField] private CreatureBase[] Monsters;
+
+    private Dictionary<int, CreatureBase> characters;
+    [SerializeField] RectTransform rtrfTileMenu;
 
 
     // 인게임 격자 무늬
@@ -19,6 +25,8 @@ public class BattleMgr : MonoBehaviour
 
     // 타일 정보 저장 (좌표 -> TileOption)
     private Dictionary<Vector3Int, TileOption> tileDataMap = new();
+
+    private Vector3Int selectedCell;
 
 
 
@@ -47,6 +55,29 @@ public class BattleMgr : MonoBehaviour
         iSpawnIdx = 0;
         iSpawnEnemyIdx = 0;
         InitializeTiles();
+
+        characters = new Dictionary<int, CreatureBase>();
+
+        int idx = ConstData.CharNumberStart;
+        foreach (var character in players)
+        {
+            characters.Add(idx, character);
+            character.charNumber = idx;
+            idx++;
+            TurnMgr.Instance.SetCreature(character.charNumber);
+        }
+
+        idx = ConstData.MonNumberStart;
+        foreach (var Monster in Monsters)
+        {
+            characters.Add(idx, Monster);
+            Monster.charNumber = idx;
+            idx++;
+            TurnMgr.Instance.SetCreature(Monster.charNumber);
+        }
+
+        // 게임 시작 - 첫 번째 턴 시작
+        TurnMgr.Instance.StartBattle();
     }
 
     void InitializeTiles()
@@ -74,11 +105,24 @@ public class BattleMgr : MonoBehaviour
         gridRenderer.SetGridOption(vec, bounds.xMax - bounds.xMin);
     }
 
+    #region Buttons
+    public void OnBtnMove()
+    {
+        players[0].MoveToCell(selectedCell);
+    }
+    #endregion
 
 
 
-
-
+    #region BattleInfo
+    public CreatureBase GetCreature(int charnumber)
+    {
+        if (characters.ContainsKey(charnumber))
+            return characters[charnumber];
+        else
+            return null;
+    }
+    #endregion
 
     #region TileEvent
     public void HandleTileClick()
@@ -93,14 +137,15 @@ public class BattleMgr : MonoBehaviour
         TileBase tileBase = tilemap.GetTile(cellPos);
         if (tileBase == null) return;
 
-        calcRangeTile(3, cellPos);
-
-        Debug.Log(tileDataMap.TryGetValue(cellPos, out var tileOption2));
         // 저장된 데이터 조회
         if (tileDataMap.TryGetValue(cellPos, out var tileOption))
         {
             Debug.Log($"타일 타입: {tileOption.tileType}");
             Debug.Log($"이동가능: {tileOption.tileType != TileType.Wall}");
+
+            // UI 메뉴 위치 지정
+            PositionTileMenu(cellPos);
+            selectedCell = cellPos;
         }
     }
 
@@ -109,14 +154,81 @@ public class BattleMgr : MonoBehaviour
         bool bActive = !goGridRenderer.activeSelf;
         goGridRenderer.SetActive(bActive);
     }
-    // 시야 범위를 받고 이동가능한 위치를 타일에 표시
-    public void OnRangeTile(List<int> idxlist)
-    {
 
+    /// <summary>
+    /// 타일 메뉴 UI를 클릭한 셀 주변에 위치시킴
+    /// </summary>
+    private void PositionTileMenu(Vector3Int cellPos)
+    {
+        if (rtrfTileMenu == null)
+        {
+            Debug.LogWarning("rtrfTileMenu가 설정되지 않았습니다.");
+            return;
+        }
+
+        // 타일의 월드 좌표 계산
+        Vector3 tileWorldPos = tilemap.GetCellCenterWorld(cellPos);
+        // Canvas를 찾기
+        Canvas canvas = rtrfTileMenu.GetComponentInParent<Canvas>();
+        // MainCamera를 사용하여 스크린 좌표로 변환 (게임 화면 기준)
+        Vector2 screenPos = Camera.main.WorldToScreenPoint(tileWorldPos);
+        // Canvas의 RenderMode에 따라 카메라 결정
+        Camera uiCamera = (canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : canvas.worldCamera;
+
+        // 스크린 좌표를 UI 캔버스의 로컬 좌표로 변환
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            rtrfTileMenu.parent as RectTransform,
+            screenPos,
+            uiCamera,
+            out Vector2 localPoint
+        );
+
+        rtrfTileMenu.anchoredPosition = localPoint + (Vector2.up * 20);
     }
 
-
     #endregion TileEvent
+
+    #region Tile Access
+    /// <summary>
+    /// 지정된 좌표의 타일 정보 조회
+    /// </summary>
+    public TileOption GetTileOption(Vector3Int cellPos)
+    {
+        if (tileDataMap.TryGetValue(cellPos, out var tileOption))
+        {
+            return tileOption;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// 지정된 좌표에 타일이 존재하는지 확인
+    /// </summary>
+    public bool IsTileExists(Vector3Int cellPos)
+    {
+        return tilemap.GetTile(cellPos) != null;
+    }
+
+    /// <summary>
+    /// 지정된 좌표의 타일 타입 조회
+    /// </summary>
+    public TileType GetTileType(Vector3Int cellPos)
+    {
+        if (tileDataMap.TryGetValue(cellPos, out var tileOption))
+        {
+            return tileOption.tileType;
+        }
+        return TileType.None;
+    }
+
+    /// <summary>
+    /// Tilemap 참조 반환
+    /// </summary>
+    public Tilemap GetTilemap()
+    {
+        return tilemap;
+    }
+    #endregion Tile Access
 
     #region Tile calc
     public static void SCalcRangeTile(int range, Vector3Int curPos)
@@ -149,6 +261,15 @@ public class BattleMgr : MonoBehaviour
             {
                 tilemap.SetColor(cellPos, Color.clear);
             }
+        }
+    }
+
+    public static void SResetRangeTile()
+    {
+        BoundsInt bounds = Instance.tilemap.cellBounds;
+        foreach (Vector3Int cellPos in bounds.allPositionsWithin)
+        {
+            Instance.tilemap.SetColor(cellPos, Color.clear);
         }
     }
 

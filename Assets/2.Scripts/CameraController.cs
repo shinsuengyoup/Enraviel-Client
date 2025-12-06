@@ -1,10 +1,13 @@
 using UnityEngine;
 using DG.Tweening;
 
-public class mainCamera : MonoBehaviour
+public class CameraController : MonoBehaviour
 {
+    public static CameraController Instance { get; private set; }
     [SerializeField]
     private Camera mainCam;
+    [SerializeField]
+    private Camera UiCam;
     [SerializeField]
     private Transform trfTarget;
 
@@ -28,6 +31,20 @@ public class mainCamera : MonoBehaviour
     private bool isDragging = false;
     private Sequence activeSequence;
     private float dragThreshold = 5f; // 드래그 판정 거리
+
+    private void Awake()
+    {
+        // 싱글톤 초기화
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("BattleMgr 싱글톤이 이미 존재합니다. 중복 인스턴스를 제거합니다.");
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
 
     private void Update()
     {
@@ -146,5 +163,10 @@ public class mainCamera : MonoBehaviour
     public void SetDragSensitivity(float sensitivity)
     {
         dragSensitivity = Mathf.Max(0, sensitivity);
+    }
+
+    public static Camera GetUiCam()
+    {
+        return Instance.UiCam;
     }
 }

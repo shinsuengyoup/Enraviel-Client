@@ -8,4 +8,9 @@ public class ConstData : MonoBehaviour
 
     public static readonly Vector3 gridMapOffset = new Vector3(0.25f, 0.25f, 0);
     public static readonly Vector3 tilePosOffset = new Vector3(0.25f, 0.5f, 0);
+
+
+
+    public static int CharNumberStart = 1;
+    public static int MonNumberStart = 10;
 }
